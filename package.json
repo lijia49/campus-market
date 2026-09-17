@@ -1,11 +1,13 @@
 {
   "name": "campus-market",
   "version": "0.1.0",
-  "description": "校园二手交易与任务发布平台 —— 账本核心",
+  "description": "校园二手交易与任务平台 · 平台不经手资金，只做撮合与信用约束",
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test": "node tests/ledger.test.js"
+    "test": "node tests/ledger.test.js && node tests/trade.test.js",
+    "test:ledger": "node tests/ledger.test.js",
+    "test:trade": "node tests/trade.test.js"
   },
   "engines": {
     "node": ">=22.5.0"
