@@ -1,0 +1,14 @@
+{
+  "name": "campus-market",
+  "version": "0.1.0",
+  "description": "校园二手交易与任务发布平台 —— 账本核心",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node tests/ledger.test.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "license": "MIT"
+}
