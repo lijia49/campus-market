@@ -89,6 +89,15 @@
   }
   .note b { color: var(--text); font-weight: 500; }
 
+  /* 身份状态盒：让「我现在能不能发布」一眼可见 */
+  .idbox { display: none; margin-top: 4px; padding: 10px 12px;
+           border-radius: 8px; font-size: 12.5px; line-height: 1.5; }
+  .idbox.show { display: block; }
+  .idbox.ok   { background: #eaf3de; color: var(--ok);  border: 1px solid #c0dd97; }
+  .idbox.warn { background: #fdf3e2; color: #8a5a0b;    border: 1px solid #f0d9a8; }
+  .idbox.err  { background: #fcebeb; color: var(--err); border: 1px solid #f7c1c1; }
+  .idbox b { font-weight: 600; }
+
   .prev { margin-top: 18px; }
   .prev h3 { font-size: 13px; font-weight: 500; margin: 0 0 10px; color: var(--muted); }
   .item {
@@ -121,7 +130,7 @@
 
   <div class="card">
     <h2>你是谁</h2>
-    <p class="hint">现在还没做登录。填一次学号，之后同一个学号会认成同一个人。</p>
+    <p class="hint">发布需要先过身份核验：填学号 + 真实姓名，系统会核对。</p>
 
     <div class="row">
       <div class="field">
@@ -129,10 +138,17 @@
         <input id="nickname" placeholder="比如：小明" maxlength="20">
       </div>
       <div class="field">
-        <label>学号 <span class="opt">选填 · 填了算已实名</span></label>
+        <label>学号</label>
         <input id="studentNo" placeholder="比如：2315402125" maxlength="20">
       </div>
     </div>
+
+    <div class="field">
+      <label>真实姓名 <span class="opt">必须和教务系统一致</span></label>
+      <input id="realName" placeholder="比如：何孝彬" maxlength="20">
+    </div>
+
+    <div id="idStatus" class="idbox"></div>
   </div>
 
   <div class="card">
@@ -238,6 +254,7 @@ $('submit').addEventListener('click', async () => {
   const payload = {
     nickname: $('nickname').value.trim(),
     studentNo: $('studentNo').value.trim(),
+    realName: $('realName').value.trim(),
     kind,
     title: $('title').value.trim(),
     description: $('description').value.trim(),
@@ -246,6 +263,8 @@ $('submit').addEventListener('click', async () => {
 
   // 先在本地挡一道，避免明显填错的还发请求
   if (!payload.nickname) return showMsg('请填一下昵称', 'err');
+  if (!payload.studentNo) return showMsg('请填一下学号（发布需要实名）', 'err');
+  if (!payload.realName) return showMsg('请填一下真实姓名，系统要核对身份', 'err');
   if (!payload.title) return showMsg('请填一下' + COPY[kind].titleLabel, 'err');
   if (payload.priceYuan === '' || Number(payload.priceYuan) < 0) {
     return showMsg('请填一个有效的' + COPY[kind].priceLabel, 'err');
@@ -262,10 +281,18 @@ $('submit').addEventListener('click', async () => {
     });
     const data = await r.json();
 
+    // 需要人工审核：不是错误，是一种中间状态，单独提示
+    if (data.needReview) {
+      showIdStatus(data.identityStatus, data.message);
+      showMsg(data.message, 'err');
+      return;
+    }
+
     if (!r.ok || !data.ok) {
       throw new Error(data.error || '发布失败');
     }
 
+    showIdStatus('verified', '身份核验通过，可以发布和接单了');
     showMsg('发布成功：' + data.trade.title, 'ok');
 
     // 清掉内容字段，但保留「你是谁」——连着发多个东西时不用重复填
@@ -280,6 +307,34 @@ $('submit').addEventListener('click', async () => {
     btn.disabled = false;
     btn.textContent = '发布';
   }
+});
+
+// ══ 身份状态显示 ═══════════════════════════════════════════
+function showIdStatus(stage, message) {
+  const box = $('idStatus');
+  const map = {
+    verified: ['ok', '✓ 已实名'],
+    pending: ['warn', '⏳ 审核中'],
+    held: ['warn', '⚠ 学号可能填错'],
+    rejected: ['err', '✕ 未通过'],
+    none: ['warn', '—'],
+  };
+  const [cls, label] = map[stage] || ['warn', '—'];
+  box.className = 'idbox show ' + cls;
+  box.innerHTML = '<b>' + label + '</b>　' + esc(message || '');
+}
+
+// 填完学号自动查一下这个学号的状态，免得填完才知道被占
+$('studentNo').addEventListener('blur', async () => {
+  const no = $('studentNo').value.trim();
+  if (!/^\d{8,12}$/.test(no)) return;
+  try {
+    const r = await fetch('/api/identity/status?studentNo=' + encodeURIComponent(no));
+    const d = await r.json();
+    if (d.stage && d.stage !== 'none') {
+      showIdStatus(d.stage, d.message);
+    }
+  } catch (e) { /* 查不到就算了，不打扰用户 */ }
 });
 
 // ══ 加载最近发布 ═══════════════════════════════════════════
