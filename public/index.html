@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>发布 · 校园二手市场</title>
+<style>
+  :root {
+    --bg: #f5f5f2;
+    --card: #ffffff;
+    --line: #e0e0da;
+    --text: #26262a;
+    --muted: #77776f;
+    --accent: #185fa5;
+    --accent-soft: #e6f1fb;
+    --ok: #3b6d11;
+    --err: #a32d2d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 14px;
+  }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 32px 20px 80px; }
+  header { margin-bottom: 24px; }
+  h1 { font-size: 20px; font-weight: 500; margin: 0 0 6px; }
+  .sub { color: var(--muted); font-size: 13px; }
+
+  .tabs { display: flex; gap: 8px; margin: 20px 0 18px; }
+  .tab {
+    flex: 1; padding: 10px 14px; text-align: center; cursor: pointer;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 10px; font-size: 14px; user-select: none;
+    transition: border-color .15s, background .15s;
+  }
+  .tab:hover { border-color: #c8c8c0; }
+  .tab.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 20px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 14px; font-weight: 500; margin: 0 0 4px; }
+  .card .hint { color: var(--muted); font-size: 12px; margin: 0 0 16px; }
+
+  label { display: block; font-size: 13px; margin-bottom: 6px; font-weight: 500; }
+  label .opt { color: var(--muted); font-weight: 400; font-size: 12px; }
+  input, textarea {
+    width: 100%; padding: 10px 12px; font-size: 14px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: #fbfbf9; color: var(--text);
+    font-family: inherit; outline: none;
+    transition: border-color .15s;
+  }
+  input:focus, textarea:focus { border-color: var(--accent); background: #fff; }
+  textarea { resize: vertical; min-height: 76px; }
+  .field { margin-bottom: 16px; }
+  .row { display: flex; gap: 12px; }
+  .row > * { flex: 1; }
+
+  .price-wrap { position: relative; }
+  .price-wrap .yuan {
+    position: absolute; left: 12px; top: 10px;
+    color: var(--muted); font-size: 14px; pointer-events: none;
+  }
+  .price-wrap input { padding-left: 28px; }
+
+  button {
+    width: 100%; padding: 12px; font-size: 15px; font-weight: 500;
+    color: #fff; background: var(--accent); border: none;
+    border-radius: 10px; cursor: pointer; font-family: inherit;
+    transition: opacity .15s;
+  }
+  button:hover:not(:disabled) { opacity: .88; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  .msg { padding: 12px 14px; border-radius: 8px; margin-bottom: 14px; font-size: 13px; display: none; }
+  .msg.show { display: block; }
+  .msg.ok { background: #eaf3de; color: var(--ok); border: 1px solid #c0dd97; }
+  .msg.err { background: #fcebeb; color: var(--err); border: 1px solid #f7c1c1; }
+
+  .note {
+    font-size: 12px; color: var(--muted);
+    border-left: 2px solid var(--line); padding-left: 12px; margin-top: 18px;
+  }
+  .note b { color: var(--text); font-weight: 500; }
+
+  .prev { margin-top: 18px; }
+  .prev h3 { font-size: 13px; font-weight: 500; margin: 0 0 10px; color: var(--muted); }
+  .item {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line);
+  }
+  .item:last-child { border-bottom: none; }
+  .item .t { font-size: 14px; font-weight: 500; }
+  .item .d { font-size: 12px; color: var(--muted); }
+  .item .p { font-size: 14px; color: var(--accent); font-weight: 500; white-space: nowrap; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 32px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>发布</h1>
+    <p class="sub">把闲置挂出来，或者发个跑腿任务</p>
+  </header>
+
+  <div class="tabs">
+    <div class="tab on" data-kind="goods">闲置物品</div>
+    <div class="tab" data-kind="task">跑腿任务</div>
+  </div>
+
+  <div id="msg" class="msg"></div>
+
+  <div class="card">
+    <h2>你是谁</h2>
+    <p class="hint">现在还没做登录。填一次学号，之后同一个学号会认成同一个人。</p>
+
+    <div class="row">
+      <div class="field">
+        <label>昵称</label>
+        <input id="nickname" placeholder="比如：小明" maxlength="20">
+      </div>
+      <div class="field">
+        <label>学号 <span class="opt">选填 · 填了算已实名</span></label>
+        <input id="studentNo" placeholder="比如：2315402125" maxlength="20">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 id="formTitle">物品信息</h2>
+    <p class="hint" id="formHint">写清楚是什么、什么成色，别人好判断</p>
+
+    <div class="field">
+      <label id="titleLabel">标题</label>
+      <input id="title" placeholder="比如：二手吉他，用了两年" maxlength="60">
+    </div>
+
+    <div class="field">
+      <label id="descLabel">详细说明 <span class="opt">选填</span></label>
+      <textarea id="description" placeholder="成色、有无磕碰、可以约在哪交易……" maxlength="500"></textarea>
+    </div>
+
+    <div class="field">
+      <label id="priceLabel">价格</label>
+      <div class="price-wrap">
+        <span class="yuan">¥</span>
+        <input id="price" type="number" min="0" step="0.01" placeholder="0.00">
+      </div>
+    </div>
+
+    <button id="submit">发布</button>
+
+    <p class="note">
+      <b>平台不经手钱。</b>这里填的价格只是你和对方的约定，钱你们自己结算。
+      我们不收保证金、不做担保，遇到纠纷平台只提供交易记录作为凭证。
+    </p>
+  </div>
+
+  <div class="card prev">
+    <h3>刚发布的</h3>
+    <div id="list"><p class="sub">还没有内容</p></div>
+  </div>
+
+  <footer>
+    <a href="/trades">查看全部交易 →</a>
+  </footer>
+
+</div>
+
+<script>
+// ══ 页面状态 ═══════════════════════════════════════════════
+let kind = 'goods';
+
+// 两种类型的文案差异，只在这里改一处
+const COPY = {
+  goods: {
+    tab: '闲置物品',
+    formTitle: '物品信息',
+    formHint: '写清楚是什么、什么成色，别人好判断',
+    titleLabel: '标题',
+    titlePh: '比如：二手吉他，用了两年',
+    descPh: '成色、有无磕碰、可以约在哪交易……',
+    priceLabel: '价格',
+  },
+  task: {
+    tab: '跑腿任务',
+    formTitle: '任务信息',
+    formHint: '说清楚要做什么、什么时候要，别人好判断接不接',
+    titleLabel: '任务内容',
+    titlePh: '比如：帮忙去东门取个快递',
+    descPh: '时间要求、地点、注意事项……',
+    priceLabel: '报酬',
+  },
+};
+
+// ══ 元素引用 ═══════════════════════════════════════════════
+const $ = (id) => document.getElementById(id);
+const tabs = document.querySelectorAll('.tab');
+
+// ══ 切换类型 ═══════════════════════════════════════════════
+tabs.forEach((el) => {
+  el.addEventListener('click', () => {
+    kind = el.dataset.kind;
+    tabs.forEach((t) => t.classList.toggle('on', t === el));
+    const c = COPY[kind];
+    $('formTitle').textContent = c.formTitle;
+    $('formHint').textContent = c.formHint;
+    $('titleLabel').textContent = c.titleLabel;
+    $('title').placeholder = c.titlePh;
+    $('description').placeholder = c.descPh;
+    $('priceLabel').textContent = c.priceLabel;
+  });
+});
+
+// ══ 消息提示 ═══════════════════════════════════════════════
+function showMsg(text, type) {
+  const el = $('msg');
+  el.textContent = text;
+  el.className = 'msg show ' + type;
+  if (type === 'ok') {
+    setTimeout(() => { el.className = 'msg'; }, 4000);
+  }
+}
+
+// ══ 提交发布 ═══════════════════════════════════════════════
+$('submit').addEventListener('click', async () => {
+  const btn = $('submit');
+
+  const payload = {
+    nickname: $('nickname').value.trim(),
+    studentNo: $('studentNo').value.trim(),
+    kind,
+    title: $('title').value.trim(),
+    description: $('description').value.trim(),
+    priceYuan: $('price').value,
+  };
+
+  // 先在本地挡一道，避免明显填错的还发请求
+  if (!payload.nickname) return showMsg('请填一下昵称', 'err');
+  if (!payload.title) return showMsg('请填一下' + COPY[kind].titleLabel, 'err');
+  if (payload.priceYuan === '' || Number(payload.priceYuan) < 0) {
+    return showMsg('请填一个有效的' + COPY[kind].priceLabel, 'err');
+  }
+
+  btn.disabled = true;
+  btn.textContent = '发布中…';
+
+  try {
+    const r = await fetch('/api/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json();
+
+    if (!r.ok || !data.ok) {
+      throw new Error(data.error || '发布失败');
+    }
+
+    showMsg('发布成功：' + data.trade.title, 'ok');
+
+    // 清掉内容字段，但保留「你是谁」——连着发多个东西时不用重复填
+    $('title').value = '';
+    $('description').value = '';
+    $('price').value = '';
+
+    loadList();
+  } catch (e) {
+    showMsg(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '发布';
+  }
+});
+
+// ══ 加载最近发布 ═══════════════════════════════════════════
+async function loadList() {
+  try {
+    const r = await fetch('/api/trades');
+    const data = await r.json();
+    const box = $('list');
+
+    if (!data.trades || data.trades.length === 0) {
+      box.innerHTML = '<p class="sub">还没有内容</p>';
+      return;
+    }
+
+    box.innerHTML = data.trades.slice(0, 6).map((t) => `
+      <div class="item">
+        <div>
+          <div class="t">${esc(t.title)}</div>
+          <div class="d">${t.kind === 'task' ? '跑腿任务' : '闲置物品'} · ${statusText(t.status)}</div>
+        </div>
+        <div class="p">¥${t.price}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function statusText(s) {
+  return {
+    open: '可接单', taken: '已接单', delivering: '待确认',
+    completed: '已完成', cancelled: '已取消', disputed: '有争议',
+  }[s] || s;
+}
+
+// 防 XSS：用户填的内容要转义后再插进页面
+function esc(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[c]);
+}
+
+loadList();
+</script>
+</body>
+</html>

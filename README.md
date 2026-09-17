@@ -81,6 +81,24 @@ open ──take──→ taken ──deliver──→ delivering ──confirm�
 - `trade_events` —— 事件流水，**追加式、不可改不可删**，出纠纷可完整回放
 - `credit_events` —— 信用记录，谁守约谁放鸽子
 
+### ✅ 第三阶段：能用了（`src/server/` + `public/`）
+
+一个**零依赖**的网页服务 —— 只用 Node 自带的 `node:http` 和 `node:sqlite`，
+不装 Express、不装任何东西。9 组接口实测全过。
+
+**为什么不用框架？** 因为你现在还在"看懂"的阶段。
+Express 帮你把请求链路藏起来了，藏起来的东西你没法学。
+用 `node:http`，你能亲眼看到"一个请求进来 → 路由匹配 → 读数据库 → 回 JSON"的完整路径。
+等这条链路你闭着眼都能画出来，再上框架是提效；现在上框架是遮蔽。
+
+**身份暂时很简化：** 发布时手填昵称 + 学号，系统自动建档；填了学号就算实名。
+密码、短信验证这些都还没有 —— 先把"平台是活的"做出来，身份系统是下一步。
+
+```bash
+node src/server/server.js     # 起来后打开 http://localhost:3000
+node tests/api.test.js        # 9 组接口实测（需服务已启动）
+```
+
 ### 踩过的坑（都写进代码注释了）
 
 **坑 1：对账公式算错**
@@ -110,6 +128,12 @@ node tests/ledger.test.js
 
 # 交易核心测试（40 项）—— 当前主线
 node tests/trade.test.js
+
+# 起服务（新开一个终端窗口，别关）
+node src/server/server.js
+
+# 接口实测（9 组，需要服务已在运行）
+node tests/api.test.js
 ```
 
 ## 代码结构
@@ -117,19 +141,21 @@ node tests/trade.test.js
 ```
 src/ledger/ledger.js     账本核心（能力储备，当前未启用）
 src/trade/trade.js       交易核心（当前主线）
+src/server/server.js     零依赖 HTTP 服务
+public/index.html        发布页界面
 tests/ledger.test.js     账本测试
 tests/trade.test.js      交易测试
+tests/api.test.js        接口实测
 tests/debug_audit.js     排查对账问题的过程记录
 ```
 
 ## 接下来要做的
 
 - [ ] 用户登录（现在只有注册，没验证身份）
-- [ ] 发布/浏览/搜索的界面
+- [ ] 交易列表页 + 详情页（现在列表只有接口，还没界面）
 - [ ] 信用分展示与排行榜
 - [ ] 评价系统（不只是加分扣分，还要能写理由）
 - [ ] 争议处理的简单后台
-- [ ] 网页界面
 
 ---
 
